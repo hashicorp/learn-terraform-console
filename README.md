@@ -179,6 +179,8 @@ Refresh state (loads objects into data.aws_s3_bucket_objects.website).
 $ terraform refresh
 ```
 
+## Goal: Echo a command to the console
+
 If you just need to evaluate a single expression, you can "echo" a string to the console command.
 
 ```sh
