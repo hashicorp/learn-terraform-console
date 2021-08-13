@@ -87,8 +87,6 @@ Now use this data to create an output that collects info about the instance into
 
 Exit the console with `Ctrl-D` or `exit`.
 
-Add to `outputs.tf`.
-
 ```sh
 > exit
 ```
