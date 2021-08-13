@@ -20,10 +20,10 @@ $ terraform apply
 $ terraform console
 ```
 
-- An interactive session that evaluates Terraform expressions. 
+The console:
 
+- An interactive session that evaluates Terraform expressions.
 - Try out Terraform expressions before using them in configuration.
-
 - Also loads your state when it starts, so you can explore data about your resources.
 
 The console does not:
@@ -75,6 +75,7 @@ tolist([
 
 Now use this data to create an output that collects info about the instance into a map.
 
+```sh
 > { instance_id = aws_instance.app.id, ami_id = aws_instance.app.ami, latest_ami = data.aws_ami.amazon_linux.id, is_latest_ami = aws_instance.app.ami == data.aws_ami.amazon_linux.id }
 {
   "ami_id" = "ami-0c5204531f799e0c6"
@@ -82,6 +83,14 @@ Now use this data to create an output that collects info about the instance into
   "is_latest_ami" = false
   "latest_ami" = "ami-083ac7c7ecf9bb9b0"
 }
+```
+
+Exit the console with `Ctrl-D` or `exit`.
+
+Add to `outputs.tf`.
+
+```sh
+> exit
 ```
 
 Add to `outputs.tf`.
@@ -119,14 +128,18 @@ JSON string can make it easier to format and catch syntax errors early.
 
 Inspect the bucket policy.
 
+```sh
+$ terraform console
 ```
+
+```sh
 > aws_s3_bucket.website.policy
 "{\"Statement\":[{\"Action\":\"s3:GetObject\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Resource\":\"arn:aws:s3:::hashilearn-etsyji4p51rg/*\",\"Sid\":\"PublicReadGetObject\"}],\"Version\":\"2012-10-17\"}"
 ```
 
 Use the `jsondecode()` function to convert from JSON to HCL.
 
-```
+```sh
 > jsondecode(aws_s3_bucket.website.policy)
 {
   "Statement" = [
@@ -142,9 +155,15 @@ Use the `jsondecode()` function to convert from JSON to HCL.
 }
 ```
 
-Copy and paste the HCL version of the policy into the config, and replace the
-bucket name with `${local.bucket_name}`. Use `jsonencode()` to convert back to
-JSON.
+Exit the console with `exit` or `Control-D`.
+
+```
+> exit
+```
+
+Remove the old `policy =<<EOF ... EOF`, copy and paste the HCL version of the
+policy into the config, and replace the bucket name with `${local.bucket_name}`.
+Use `jsonencode()` to convert back to JSON.
 
 ```hcl
   policy = jsonencode({
@@ -161,19 +180,13 @@ JSON.
 })
 ```
 
-Exit the console with `exit` or `Control-D`.
-
-```
-> exit
-```
-
 Copy website to bucket.
 
 ```sh
 $ aws s3 sync www/ s3://$(terraform output -raw s3_bucket_name)
 ```
 
-Refresh state (loads objects into data.aws_s3_bucket_objects.website).
+Refresh state to load objects into data.aws_s3_bucket_objects.website.
 
 ```sh
 $ terraform refresh
@@ -210,7 +223,7 @@ Add an output for the list of keys.
 
 ```hcl
 output "s3_bucket_objects" {
-  description = "List of objects in bucket."
+  description = "List of objects in our bucket."
   value = data.aws_s3_bucket_objects.website.keys
 }
 ```
@@ -219,6 +232,14 @@ Apply to see the output.
 
 ```sh
 $ terraform apply
+##...
+s3_bucket_objects = tolist([
+  "error.html",
+  "images/background.png",
+  "index.html",
+  "scripts/terramino.js",
+  "styles/main.css",
+])
 ```
 
 Destroy.
