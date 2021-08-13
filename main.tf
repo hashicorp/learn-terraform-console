@@ -45,7 +45,7 @@ resource "aws_s3_bucket" "website" {
 
   force_destroy = true
 
-  acl    = "public-read"
+  acl    = "private"
   policy = <<EOF
 {
     "Version": "2012-10-17",
