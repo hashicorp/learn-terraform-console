@@ -1,6 +1,7 @@
 ## Terraform Console Command
 
-Starting config in `main.tf` defines an EC2 instance and a bucket.
+Starting config in `main.tf` defines an EC2 instance, a bucket, and an IAM role
+that allows the EC2 instance to read the contents of the bucket.
 
 Init.
 
@@ -131,22 +132,54 @@ $ terraform console
 ```
 
 ```sh
-> aws_s3_bucket.website.policy
-"{\"Statement\":[{\"Action\":\"s3:GetObject\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Resource\":\"arn:aws:s3:::hashilearn-etsyji4p51rg/*\",\"Sid\":\"PublicReadGetObject\"}],\"Version\":\"2012-10-17\"}"
+> aws_iam_role_policy.app.policy
+<<EOT
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::hashilearn-9st9ilrc5wp0"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectVersion"
+      ],
+      "Resource": ["arn:aws:s3:::hashilearn-9st9ilrc5wp0/*"]
+    }
+  ]
+}
+
+EOT
 ```
 
 Use the `jsondecode()` function to convert from JSON to HCL.
 
 ```sh
-> jsondecode(aws_s3_bucket.website.policy)
+> jsondecode(aws_iam_role_policy.app.policy)
 {
   "Statement" = [
     {
-      "Action" = "s3:GetObject"
+      "Action" = [
+        "s3:ListBucket",
+      ]
       "Effect" = "Allow"
-      "Principal" = "*"
-      "Resource" = "arn:aws:s3:::hashilearn-etsyji4p51rg/*"
-      "Sid" = "PublicReadGetObject"
+      "Resource" = [
+        "arn:aws:s3:::hashilearn-9st9ilrc5wp0",
+      ]
+    },
+    {
+      "Action" = [
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+      ]
+      "Effect" = "Allow"
+      "Resource" = [
+        "arn:aws:s3:::hashilearn-9st9ilrc5wp0/*",
+      ]
     },
   ]
   "Version" = "2012-10-17"
@@ -165,26 +198,38 @@ Use `jsonencode()` to convert back to JSON.
 
 ```hcl
   policy = jsonencode({
-  "Statement" = [
-    {
-      "Action" = "s3:GetObject"
-      "Effect" = "Allow"
-      "Principal" = "*"
-      "Resource" = "arn:aws:s3:::${local.bucket_name}/*"
-      "Sid" = "PublicReadGetObject"
-    },
-  ]
-  "Version" = "2012-10-17"
-})
+    "Statement" = [
+      {
+        "Action" = [
+          "s3:ListBucket",
+        ]
+        "Effect" = "Allow"
+        "Resource" = [
+          "arn:aws:s3:::${local.bucket_name}",
+        ]
+      },
+      {
+        "Action" = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+        ]
+        "Effect" = "Allow"
+        "Resource" = [
+          "arn:aws:s3:::${local.bucket_name}/*",
+        ]
+      },
+    ]
+    "Version" = "2012-10-17"
+  })
 ```
 
 Copy website to bucket.
 
 ```sh
-$ aws s3 sync www/ s3://$(terraform output -raw s3_bucket_name)
+$ aws s3 sync data/ s3://$(terraform output -raw s3_bucket_name)
 ```
 
-Refresh state to load objects into data.aws_s3_bucket_objects.website.
+Refresh state to load objects into data.aws_s3_bucket_objects.data.
 
 ```sh
 $ terraform refresh
@@ -195,7 +240,7 @@ $ terraform refresh
 If you just need to evaluate a single expression, you can "echo" a string to the console command.
 
 ```sh
-$ echo "data.aws_s3_bucket_objects.website" | terraform console
+$ echo "data.aws_s3_bucket_objects.data_bucket" | terraform console
 {
   "bucket" = "hashilearn-o8c533b3rq71"
   "common_prefixes" = tolist([])
@@ -204,11 +249,12 @@ $ echo "data.aws_s3_bucket_objects.website" | terraform console
   "fetch_owner" = tobool(null)
   "id" = "hashilearn-o8c533b3rq71"
   "keys" = tolist([
-    "error.html",
-    "images/background.png",
-    "index.html",
-    "scripts/terramino.js",
-    "styles/main.css",
+    "2021-08-01.csv",
+    "2021-08-02.csv",
+    "2021-08-03.csv",
+    "2021-08-04.csv",
+    "2021-08-05.csv",
+    "2021-08-06.csv",
   ])
   "max_keys" = 1000
   "owners" = tolist([])
@@ -222,7 +268,7 @@ Add an output for the list of keys.
 ```hcl
 output "s3_bucket_objects" {
   description = "List of objects in our bucket."
-  value = data.aws_s3_bucket_objects.website.keys
+  value = data.aws_s3_bucket_objects.data_bucket.keys
 }
 ```
 
@@ -232,11 +278,12 @@ Apply to see the output.
 $ terraform apply
 ##...
 s3_bucket_objects = tolist([
-  "error.html",
-  "images/background.png",
-  "index.html",
-  "scripts/terramino.js",
-  "styles/main.css",
+  "2021-08-01.csv",
+  "2021-08-02.csv",
+  "2021-08-03.csv",
+  "2021-08-04.csv",
+  "2021-08-05.csv",
+  "2021-08-06.csv",
 ])
 ```
 
