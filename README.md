@@ -59,34 +59,32 @@ tolist([
 ## Goal: Learn how to inspect state
 
 ```sh
-> aws_instance.app
+> aws_s3_bucket.data
 ##...lots of data
-> aws_instance.app.id
-"i-058c9200aef63c0a8"
-> "Instance: ${aws_instance.app.id}, AMI ID: ${aws_instance.app.ami}"
-"Instance: i-058c9200aef63c0a8, AMI ID: ami-0c5204531f799e0c6"
-> { instance_id: aws_instance.app.id, ami_id: aws_instance.app.ami }
+> aws_s3_bucket.data.arn
+"arn:aws:s3:::hashilearn-gfvtd49xi10y"
+> "Bucket ARN: ${aws_s3_bucket.data.arn}, Region: ${aws_s3_bucket.data.region}"
+"Bucket ARN: arn:aws:s3:::hashilearn-gfvtd49xi10y, Region: us-west-2"
+> { arn = aws_s3_bucket.data.arn, region = aws_s3_bucket.data.region, id = aws_s3_bucket.data.id }
 {
-  "ami_id" = "ami-0c5204531f799e0c6"
-  "instance_id" = "i-058c9200aef63c0a8"
+  "arn" = "arn:aws:s3:::hashilearn-gfvtd49xi10y"
+  "id" = "hashilearn-gfvtd49xi10y"
+  "region" = "us-west-2"
 }
-> data.aws_ami.amazon_linux
-##...
 ```
 
 Now use this data to create an output that collects info about the instance into a map.
 
 ```sh
-> { instance_id = aws_instance.app.id, ami_id = aws_instance.app.ami, latest_ami = data.aws_ami.amazon_linux.id, is_latest_ami = aws_instance.app.ami == data.aws_ami.amazon_linux.id }
+> { arn = aws_s3_bucket.data.arn, region = aws_s3_bucket.data.region, id = aws_s3_bucket.data.id }
 {
-  "ami_id" = "ami-0c5204531f799e0c6"
-  "instance_id" = "i-058c9200aef63c0a8"
-  "is_latest_ami" = false
-  "latest_ami" = "ami-083ac7c7ecf9bb9b0"
+  "arn" = "arn:aws:s3:::hashilearn-gfvtd49xi10y"
+  "id" = "hashilearn-gfvtd49xi10y"
+  "region" = "us-west-2"
 }
 ```
 
-Exit the console with `Ctrl-D` or `exit`.
+Exit the console with `<Ctrl-D>` or `exit`.
 
 ```sh
 > exit
@@ -95,13 +93,12 @@ Exit the console with `Ctrl-D` or `exit`.
 Add to `outputs.tf`.
 
 ```hcl
-output "instance_details" {
-  description = "Details about our instance."
+output "bucket_details" {
+  description = "Details about our bucket."
   value = {
-    instance_id = aws_instance.app.id,
-    ami_id = aws_instance.app.ami,
-    latest_ami = data.aws_ami.amazon_linux.id,
-    is_latest_ami = (aws_instance.app.ami == data.aws_ami.amazon_linux.id)
+    arn = aws_s3_bucket.data.arn,
+    region = aws_s3_bucket.data.region,
+    id = aws_s3_bucket.data.id
   }
 }
 ```
@@ -111,11 +108,8 @@ $ terraform apply
 ##...
 Outputs:
 
-instance_details = {
-  "ami_id" = "ami-0c5204531f799e0c6"
-  "instance_id" = "i-09bb818dba51253c5"
-  "is_latest_ami" = false
-  "latest_ami" = "ami-083ac7c7ecf9bb9b0"
+bucket_details = {
+## FIXME
 }
 ```
 
@@ -131,55 +125,30 @@ Inspect the bucket policy.
 $ terraform console
 ```
 
-```sh
-> aws_iam_role_policy.app.policy
-<<EOT
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": ["s3:ListBucket"],
-      "Resource": ["arn:aws:s3:::hashilearn-9st9ilrc5wp0"]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:GetObjectVersion"
-      ],
-      "Resource": ["arn:aws:s3:::hashilearn-9st9ilrc5wp0/*"]
-    }
-  ]
-}
-
-EOT
-```
-
 Use the `jsondecode()` function to convert from JSON to HCL.
 
 ```sh
-> jsondecode(aws_iam_role_policy.app.policy)
+> jsondecode(aws_s3_bucket.data.policy)
 {
+  "Id" = "S3DataBucketPolicy"
   "Statement" = [
     {
-      "Action" = [
-        "s3:ListBucket",
-      ]
-      "Effect" = "Allow"
+      "Action" = "s3:*"
+      "Condition" = {
+        "Bool" = {
+          "aws:ViaAWSService" = "false"
+        }
+        "NotIpAddress" = {
+          "aws:SourceIp" = "162.233.171.126/32"
+        }
+      }
+      "Effect" = "Deny"
+      "Principal" = "*"
       "Resource" = [
-        "arn:aws:s3:::hashilearn-9st9ilrc5wp0",
+        "arn:aws:s3:::hashilearn-gfvtd49xi10y",
+        "arn:aws:s3:::hashilearn-gfvtd49xi10y/*",
       ]
-    },
-    {
-      "Action" = [
-        "s3:GetObject",
-        "s3:GetObjectVersion",
-      ]
-      "Effect" = "Allow"
-      "Resource" = [
-        "arn:aws:s3:::hashilearn-9st9ilrc5wp0/*",
-      ]
+      "Sid" = "IPAllow"
     },
   ]
   "Version" = "2012-10-17"
@@ -188,7 +157,7 @@ Use the `jsondecode()` function to convert from JSON to HCL.
 
 Exit the console with `exit` or `Control-D`.
 
-```
+```shell-session
 > exit
 ```
 
@@ -198,32 +167,32 @@ Use `jsonencode()` to convert back to JSON.
 
 ```hcl
   policy = jsonencode({
-    "Statement" = [
-      {
-        "Action" = [
-          "s3:ListBucket",
-        ]
-        "Effect" = "Allow"
-        "Resource" = [
-          "arn:aws:s3:::${local.bucket_name}",
-        ]
-      },
-      {
-        "Action" = [
-          "s3:GetObject",
-          "s3:GetObjectVersion",
-        ]
-        "Effect" = "Allow"
-        "Resource" = [
-          "arn:aws:s3:::${local.bucket_name}/*",
-        ]
-      },
-    ]
-    "Version" = "2012-10-17"
-  })
+  "Id" = "S3DataBucketPolicy"
+  "Statement" = [
+    {
+      "Action" = "s3:*"
+      "Condition" = {
+        "Bool" = {
+          "aws:ViaAWSService" = "false"
+        }
+        "NotIpAddress" = {
+          "aws:SourceIp" = "162.233.171.126/32"
+        }
+      }
+      "Effect" = "Deny"
+      "Principal" = "*"
+      "Resource" = [
+        "arn:aws:s3:::hashilearn-gfvtd49xi10y",
+        "arn:aws:s3:::hashilearn-gfvtd49xi10y/*",
+      ]
+      "Sid" = "IPAllow"
+    },
+  ]
+  "Version" = "2012-10-17"
+})
 ```
 
-Copy website to bucket.
+Copy data to bucket.
 
 ```sh
 $ aws s3 sync data/ s3://$(terraform output -raw s3_bucket_name)

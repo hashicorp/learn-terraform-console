@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.1.0"
     }
+    http = {
+      source = "hashicorp/http"
+      version = "2.1.0"
+    }
   }
 }
 
@@ -23,6 +27,11 @@ resource "random_string" "bucket_suffix" {
 
 locals {
   bucket_name = "${var.bucket_prefix}-${random_string.bucket_suffix.result}"
+  local_ip_cidr = chomp(data.http.local_ip.body)
+}
+
+data "http" "local_ip" {
+  url = "http://ipv4.icanhazip.com"
 }
 
 resource "aws_s3_bucket" "data" {
@@ -31,73 +40,31 @@ resource "aws_s3_bucket" "data" {
   force_destroy = true
 
   acl = "private"
-}
-
-resource "aws_iam_role" "app" {
-    name = "app_iam_role"
-    assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "ec2.amazonaws.com"
-      },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
-}
-EOF
-}
-
-resource "aws_iam_role_policy" "app" {
-  name = "app_iam_role_policy"
-  role = aws_iam_role.app.id
 
   policy = <<EOF
 {
   "Version": "2012-10-17",
+  "Id": "S3DataBucketPolicy",
   "Statement": [
     {
-      "Effect": "Allow",
-      "Action": ["s3:ListBucket"],
-      "Resource": ["arn:aws:s3:::${local.bucket_name}"]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:GetObjectVersion"
+      "Sid": "IPAllow",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::${local.bucket_name}",
+        "arn:aws:s3:::${local.bucket_name}/*"
       ],
-      "Resource": ["arn:aws:s3:::${local.bucket_name}/*"]
+      "Condition": {
+        "NotIpAddress": {
+          "aws:SourceIp": "${local.local_ip}"
+        },
+        "Bool": {"aws:ViaAWSService": "false"}
+      }
     }
   ]
 }
 EOF
-}
-
-resource "aws_iam_instance_profile" "app" {
-    name = "app_instance_profile"
-    role = aws_iam_role.app.name
-}
-
-resource "aws_instance" "app" {
-  instance_type = "t2.micro"
-  ami           = "ami-0c5204531f799e0c6"
-
-  iam_instance_profile = aws_iam_instance_profile.app.id
-}
-
-data "aws_ami" "amazon_linux" {
-  owners      = ["amazon"]
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
-  }
 }
 
 data "aws_s3_bucket_objects" "data_bucket" {
