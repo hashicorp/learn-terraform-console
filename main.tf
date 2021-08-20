@@ -9,7 +9,7 @@ terraform {
       version = "~> 3.1.0"
     }
     http = {
-      source = "hashicorp/http"
+      source  = "hashicorp/http"
       version = "2.1.0"
     }
   }
@@ -25,13 +25,12 @@ resource "random_string" "bucket_suffix" {
   upper   = false
 }
 
-locals {
-  bucket_name = "${var.bucket_prefix}-${random_string.bucket_suffix.result}"
-  local_ip = chomp(data.http.local_ip.body)
-}
-
 data "http" "local_ip" {
   url = "http://ipv4.icanhazip.com"
+}
+
+locals {
+  bucket_name = "${var.bucket_prefix}-${random_string.bucket_suffix.result}"
 }
 
 resource "aws_s3_bucket" "data" {
@@ -43,28 +42,27 @@ resource "aws_s3_bucket" "data" {
 
   policy = <<EOF
 {
-  "Version": "2012-10-17",
-  "Id": "S3DataBucketPolicy",
-  "Statement": [
-    {
-      "Sid": "IPAllow",
-      "Effect": "Deny",
-      "Principal": "*",
-      "Action": "s3:*",
-      "Resource": [
-        "arn:aws:s3:::${local.bucket_name}",
-        "arn:aws:s3:::${local.bucket_name}/*"
-      ],
-      "Condition": {
-        "NotIpAddress": {
-          "aws:SourceIp": "0.0.0.0/0"
-        },
-        "Bool": {"aws:ViaAWSService": "false"}
+    "Version": "2012-10-17",
+    "Id": "S3DataBucketPolicy",
+    "Statement": [
+      {
+        "Sid": "IPAllow",
+        "Effect": "Deny",
+        "Principal": "*",
+        "Action": "s3:*",
+        "Resource": [
+          "arn:aws:s3:::${local.bucket_name}",
+          "arn:aws:s3:::${local.bucket_name}/*"
+        ],
+        "Condition": {
+          "NotIpAddress": {
+            "aws:SourceIp": "0.0.0.0/0"
+          }
+        }
       }
-    }
-  ]
-}
-EOF
+    ]
+  }
+  EOF
 }
 
 data "aws_s3_bucket_objects" "data_bucket" {

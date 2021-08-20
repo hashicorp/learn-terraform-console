@@ -1,3 +1,5 @@
+# Input variables
+
 variable "aws_region" {
   description = "AWS region"
   type        = string
@@ -12,7 +14,8 @@ variable "bucket_prefix" {
 
 variable "allowed_ips" {
   description = "List of IP addresses allowed to access S3 bucket."
-  type = list(string)
+  type        = list(string)
+
   default = [
     "192.0.2.1",
     "192.0.2.3",
