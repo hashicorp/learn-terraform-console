@@ -27,7 +27,7 @@ resource "random_string" "bucket_suffix" {
 
 locals {
   bucket_name = "${var.bucket_prefix}-${random_string.bucket_suffix.result}"
-  local_ip_cidr = chomp(data.http.local_ip.body)
+  local_ip = chomp(data.http.local_ip.body)
 }
 
 data "http" "local_ip" {
