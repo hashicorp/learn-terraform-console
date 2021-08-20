@@ -78,8 +78,8 @@ Now use this data to create an output that collects info about the instance into
 ```sh
 > { arn = aws_s3_bucket.data.arn, region = aws_s3_bucket.data.region, id = aws_s3_bucket.data.id }
 {
-  "arn" = "arn:aws:s3:::hashilearn-gfvtd49xi10y"
-  "id" = "hashilearn-gfvtd49xi10y"
+  "arn" = "arn:aws:s3:::hashilearn-vgdyku1xzt37"
+  "id" = "hashilearn-vgdyku1xzt37"
   "region" = "us-west-2"
 }
 ```
@@ -106,10 +106,29 @@ output "bucket_details" {
 ```sh
 $ terraform apply
 ##...
+Changes to Outputs:
+  + bucket_details = {
+      + arn    = "arn:aws:s3:::hashilearn-vgdyku1xzt37"
+      + id     = "hashilearn-vgdyku1xzt37"
+      + region = "us-west-2"
+    }
+
+You can apply this plan to save these new output values to the Terraform state, without changing any real infrastructure.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+##...
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
+
 Outputs:
 
 bucket_details = {
-## FIXME
+  "arn" = "arn:aws:s3:::hashilearn-vgdyku1xzt37"
+  "id" = "hashilearn-vgdyku1xzt37"
+  "region" = "us-west-2"
 }
 ```
 

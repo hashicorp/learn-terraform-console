@@ -57,7 +57,7 @@ resource "aws_s3_bucket" "data" {
       ],
       "Condition": {
         "NotIpAddress": {
-          "aws:SourceIp": "${local.local_ip}"
+          "aws:SourceIp": "0.0.0.0/0"
         },
         "Bool": {"aws:ViaAWSService": "false"}
       }
