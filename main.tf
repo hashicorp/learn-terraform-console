@@ -19,18 +19,20 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "http" "local_ip" {
+  url = "http://ipv4.icanhazip.com"
+}
+
 resource "random_string" "bucket_suffix" {
   length  = 12
   special = false
   upper   = false
 }
 
-data "http" "local_ip" {
-  url = "http://ipv4.icanhazip.com"
-}
-
 locals {
   bucket_name = "${var.bucket_prefix}-${random_string.bucket_suffix.result}"
+  # local_ip = chomp(data.http.local_ip.body)
+  # allowed_ips = concat([local.local_ip], var.allowed_ips)
 }
 
 resource "aws_s3_bucket" "data" {
@@ -39,31 +41,34 @@ resource "aws_s3_bucket" "data" {
   force_destroy = true
 
   acl = "private"
-
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Id": "S3DataBucketPolicy",
-    "Statement": [
-      {
-        "Sid": "IPAllow",
-        "Effect": "Deny",
-        "Principal": "*",
-        "Action": "s3:*",
-        "Resource": [
-          "arn:aws:s3:::${local.bucket_name}",
-          "arn:aws:s3:::${local.bucket_name}/*"
-        ],
-        "Condition": {
-          "NotIpAddress": {
-            "aws:SourceIp": "0.0.0.0/0"
-          }
-        }
-      }
-    ]
-  }
-  EOF
 }
+
+# resource "aws_s3_bucket_policy" "private" {
+#   bucket = aws_s3_bucket.data.id
+
+#   policy = jsonencode({
+#   "Id" = "S3DataBucketPolicy"
+#   "Statement" = [
+#     {
+#       "Action" = "s3:*"
+#       "Condition" = {
+#         "NotIpAddress" = {
+#           "aws:SourceIp" = local.local_ip
+# #          "aws:SourceIp" = local.allowed_ips
+#         }
+#       }
+#       "Effect" = "Deny"
+#       "Principal" = "*"
+#       "Resource" = [
+#         aws_s3_bucket.data.arn,
+#         "${aws_s3_bucket.data.arn}/*",
+#       ]
+#       "Sid" = "IPAllow"
+#     },
+#   ]
+#   "Version" = "2012-10-17"
+# })
+# }
 
 data "aws_s3_bucket_objects" "data_bucket" {
   bucket = aws_s3_bucket.data.bucket
