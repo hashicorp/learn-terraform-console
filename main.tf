@@ -31,8 +31,6 @@ resource "random_string" "bucket_suffix" {
 
 locals {
   bucket_name = "${var.bucket_prefix}-${random_string.bucket_suffix.result}"
-  # local_ip = chomp(data.http.local_ip.body)
-  # allowed_ips = concat([local.local_ip], var.allowed_ips)
 }
 
 resource "aws_s3_bucket" "data" {
@@ -42,33 +40,6 @@ resource "aws_s3_bucket" "data" {
 
   acl = "private"
 }
-
-# resource "aws_s3_bucket_policy" "private" {
-#   bucket = aws_s3_bucket.data.id
-
-#   policy = jsonencode({
-#   "Id" = "S3DataBucketPolicy"
-#   "Statement" = [
-#     {
-#       "Action" = "s3:*"
-#       "Condition" = {
-#         "NotIpAddress" = {
-#           "aws:SourceIp" = local.local_ip
-# #          "aws:SourceIp" = local.allowed_ips
-#         }
-#       }
-#       "Effect" = "Deny"
-#       "Principal" = "*"
-#       "Resource" = [
-#         aws_s3_bucket.data.arn,
-#         "${aws_s3_bucket.data.arn}/*",
-#       ]
-#       "Sid" = "IPAllow"
-#     },
-#   ]
-#   "Version" = "2012-10-17"
-# })
-# }
 
 data "aws_s3_bucket_objects" "data_bucket" {
   bucket = aws_s3_bucket.data.bucket
