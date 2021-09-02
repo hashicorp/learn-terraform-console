@@ -8,11 +8,11 @@
       "Principal": "*",
       "Action": "s3:*",
       "Resource": [
-	       "<BUCKET_ARN>",
-         "<BUCKET_ARN>/*"
+        "<BUCKET_ARN>",
+        "<BUCKET_ARN>/*"
       ],
       "Condition": {
-	 "NotIpAddress": {"aws:SourceIp": "<ALLOWED_IP>"}
+        "NotIpAddress": {"aws:SourceIp": "<ALLOWED_IP>"}
       }
     }
   ]
