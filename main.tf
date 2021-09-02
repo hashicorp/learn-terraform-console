@@ -15,10 +15,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "http" "local_ip" {
-  url = "http://ipv4.icanhazip.com"
-}
-
 resource "random_string" "bucket_suffix" {
   length  = 12
   special = false
