@@ -4,10 +4,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 3.53.0"
     }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.1.0"
-    }
   }
 }
 
@@ -15,18 +11,8 @@ provider "aws" {
   region = var.aws_region
 }
 
-resource "random_string" "bucket_suffix" {
-  length  = 12
-  special = false
-  upper   = false
-}
-
-locals {
-  bucket_name = "${var.bucket_prefix}-${random_string.bucket_suffix.result}"
-}
-
 resource "aws_s3_bucket" "data" {
-  bucket = local.bucket_name
+  bucket_prefix = var.bucket_prefix
 
   force_destroy = true
 
