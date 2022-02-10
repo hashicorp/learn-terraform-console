@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 3.58.0"
+      version = "~> 4.0.0"
     }
   }
 
@@ -21,6 +21,6 @@ resource "aws_s3_bucket" "data" {
   acl = "private"
 }
 
-data "aws_s3_bucket_objects" "data_bucket" {
+data "aws_s3_objects" "data_bucket" {
   bucket = aws_s3_bucket.data.bucket
 }
