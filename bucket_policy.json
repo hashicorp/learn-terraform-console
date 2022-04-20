@@ -1,19 +1,17 @@
 {
   "Version": "2012-10-17",
-  "Id": "S3DataBucketPolicy",
   "Statement": [
-    {
-      "Sid": "IPAllow",
-      "Effect": "Deny",
-      "Principal": "*",
-      "Action": "s3:*",
-      "Resource": [
-        "<BUCKET_ARN>",
-        "<BUCKET_ARN>/*"
-      ],
-      "Condition": {
-        "NotIpAddress": {"aws:SourceIp": "<ALLOWED_IP>"}
+      {
+          "Sid": "PublicRead",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": [
+              "s3:GetObject",
+              "s3:GetObjectVersion"
+          ],
+          "Resource": [
+              "<BUCKET_ARN>/*"
+          ]
       }
-    }
   ]
 }
