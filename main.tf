@@ -3,8 +3,6 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Environment     = "Test"
-      Service         = "Example"
       HashiCorp-Learn = "aws-default-tags"
     }
   }
