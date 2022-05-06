@@ -3,7 +3,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      HashiCorp-Learn = "aws-default-tags"
+      hashicorp-learn = "console"
     }
   }
 }
