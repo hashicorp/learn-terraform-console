@@ -17,11 +17,30 @@ resource "aws_s3_bucket" "data" {
   force_destroy = true
 }
 
-resource "aws_s3_bucket_acl" "data" {
+resource "aws_s3_bucket_public_access_block" "data" {
   bucket = aws_s3_bucket.data.id
-  acl    = "private"
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
 }
 
-data "aws_s3_objects" "data_bucket" {
+resource "aws_s3_bucket_acl" "data" {
+  depends_on = [aws_s3_bucket_ownership_controls.data, aws_s3_bucket_public_access_block.data]
+
+  bucket = aws_s3_bucket.data.id
+  acl    = "public-read"
+}
+
+resource "aws_s3_bucket_ownership_controls" "data" {
+  bucket = aws_s3_bucket.data.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+data "aws_s3_objects" "data" {
   bucket = aws_s3_bucket.data.bucket
 }
